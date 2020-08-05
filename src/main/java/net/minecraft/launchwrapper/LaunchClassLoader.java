@@ -1,6 +1,7 @@
 package net.minecraft.launchwrapper;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -22,6 +23,8 @@ public class LaunchClassLoader extends URLClassLoader {
     public static final int BUFFER_SIZE = 1 << 12;
     private List<URL> sources;
     private ClassLoader parent = getClass().getClassLoader();
+    private List<ClassLoader> child = new ArrayList<ClassLoader>();
+    private ClassLoader from = null;
 
     private List<IClassTransformer> transformers = new ArrayList<IClassTransformer>(2);
     private Map<String, Class<?>> cachedClasses = new ConcurrentHashMap<String, Class<?>>();
@@ -93,6 +96,8 @@ public class LaunchClassLoader extends URLClassLoader {
 
     @Override
     public Class<?> findClass(final String name) throws ClassNotFoundException {
+        if (from.equals(this))
+            return null;
         if (invalidClasses.contains(name)) {
             throw new ClassNotFoundException(name);
         }
@@ -177,6 +182,30 @@ public class LaunchClassLoader extends URLClassLoader {
             cachedClasses.put(transformedName, clazz);
             return clazz;
         } catch (Throwable e) {
+            if (!child.isEmpty())
+            {
+                from = this;
+                for (ClassLoader child : child)
+                {
+                    final String transformedName = transformName(name);
+
+                    try {
+                        Method find = child.getClass().getDeclaredMethod("findClass", String.class);
+                        Class<?> classe = (Class<?>) find.invoke(child, transformedName);
+                        if (classe != null)
+                        {
+                            cachedClasses.put(name,classe);
+                            from = null;
+                            return classe;
+                        }
+                    }catch(Exception e1)
+                    {
+                        from = null;
+                    }
+
+                }
+                from = null;
+            }
             invalidClasses.add(name);
             if (DEBUG) {
                 LogWrapper.log(Level.TRACE, e, "Exception encountered attempting classloading of %s", name);
