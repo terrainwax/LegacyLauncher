@@ -125,7 +125,6 @@ public class LaunchClassLoader extends URLClassLoader {
                     cachedClasses.put(name, clazz);
                     return clazz;
                 } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
                     invalidClasses.add(name);
                     throw e;
                 }
