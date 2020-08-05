@@ -94,9 +94,15 @@ public class LaunchClassLoader extends URLClassLoader {
         }
     }
 
+    public void addChild(ClassLoader child)
+    {
+        this.child.add(child);
+    }
+
+
     @Override
     public Class<?> findClass(final String name) throws ClassNotFoundException {
-        if (from.equals(this))
+        if (this.equals(from))
             return null;
         if (invalidClasses.contains(name)) {
             throw new ClassNotFoundException(name);
@@ -119,6 +125,7 @@ public class LaunchClassLoader extends URLClassLoader {
                     cachedClasses.put(name, clazz);
                     return clazz;
                 } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
                     invalidClasses.add(name);
                     throw e;
                 }
@@ -184,6 +191,7 @@ public class LaunchClassLoader extends URLClassLoader {
         } catch (Throwable e) {
             if (!child.isEmpty())
             {
+
                 from = this;
                 for (ClassLoader child : child)
                 {
@@ -191,6 +199,7 @@ public class LaunchClassLoader extends URLClassLoader {
 
                     try {
                         Method find = child.getClass().getDeclaredMethod("findClass", String.class);
+                        find.setAccessible(true);
                         Class<?> classe = (Class<?>) find.invoke(child, transformedName);
                         if (classe != null)
                         {
@@ -200,6 +209,7 @@ public class LaunchClassLoader extends URLClassLoader {
                         }
                     }catch(Exception e1)
                     {
+                        e1.printStackTrace();
                         from = null;
                     }
 
