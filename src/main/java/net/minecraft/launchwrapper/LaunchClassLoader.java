@@ -209,7 +209,7 @@ public class LaunchClassLoader extends URLClassLoader {
                         }
                     }catch(Exception e1)
                     {
-                        e1.printStackTrace();
+                        //e1.printStackTrace();
                         from = null;
                     }
 
